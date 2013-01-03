@@ -190,6 +190,7 @@
 		FF0176891695976000AB871B /* Icon-Small@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon-Small@2x.png"; sourceTree = "<group>"; };
 		FF01768E169598E500AB871B /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		FF01768F169598E500AB871B /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		FFBFCF141695BAC3003B1024 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -211,6 +212,7 @@
 		FF0171FD16958EAE00AB871B = {
 			isa = PBXGroup;
 			children = (
+				FFBFCF141695BAC3003B1024 /* README.md */,
 				FF01721216958EAE00AB871B /* FileXchangeSender */,
 				FF01720B16958EAE00AB871B /* Frameworks */,
 				FF01720916958EAE00AB871B /* Products */,
