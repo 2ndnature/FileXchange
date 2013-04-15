@@ -8,8 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
-#define DEMO_STREAMING              0
-#define DEMO_SUGGESTED_FILENAMES    0
+#define DEMO_STREAMING                            0
+#define DEMO_SUGGESTED_FILENAMES_AND_USER_INFO    1
 
 @interface MasterViewController : UITableViewController
 

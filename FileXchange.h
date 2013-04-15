@@ -10,6 +10,10 @@
 #import "HTTPServer.h"
 #import "HTTPConnection.h"
 
+extern NSString *const kFileXchangeFilePath;
+extern NSString *const kFileXchangeSuggestedFilename;
+extern NSString *const kFileXchangeUserInfo;
+
 #define DEBUGGING 1
 
 #if DEBUGGING
@@ -36,11 +40,11 @@ typedef NSInteger FileXchangeAppIconSize;
 
 #pragma mark - Server
 
-- (BOOL)presentMenuFromRect:(CGRect)aRect inView:(id)inView animated:(BOOL)animated servingFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames;
-- (BOOL)presentMenuFromBarButtonItem:(UIBarButtonItem *)buttonItem animated:(BOOL)animated servingFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames;
+- (BOOL)presentMenuFromRect:(CGRect)aRect inView:(id)inView animated:(BOOL)animated servingFiles:(NSArray *)files;
+- (BOOL)presentMenuFromBarButtonItem:(UIBarButtonItem *)buttonItem animated:(BOOL)animated servingFiles:(NSArray *)files;
 
 - (NSDictionary *)sharingInfo;
-- (BOOL)addNewFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames andNotifyApplication:(NSString *)application;
+- (BOOL)addNewFiles:(NSArray *)files andNotifyApplication:(NSString *)application;
 
 #pragma mark - Client
 

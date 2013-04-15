@@ -14,7 +14,11 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #define PULSE_INTERVAL          10.0
-#define FILEXCHANGE_VERSION     1.0
+#define FILEXCHANGE_VERSION     1.1
+
+NSString *const kFileXchangeFilePath = @"kFileXchangeFilePath";
+NSString *const kFileXchangeSuggestedFilename = @"kFileXchangeSuggestedFilename";
+NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
 
 @interface FileXchange () <UIDocumentInteractionControllerDelegate>
 {
@@ -194,13 +198,14 @@
     return icon;
 }
 
-- (NSArray *)anonymizedFileInfoForFileAtPath:(NSString *)filePath fileAttributes:(NSDictionary *)fileAttribs suggestedFilename:(NSString *)filename
+- (NSArray *)anonymizedFileInfoForFileAtPath:(NSString *)filePath fileAttributes:(NSDictionary *)fileAttribs suggestedFilename:(NSString *)filename userInfo:(id)userInfo
 {
-    return [[NSArray alloc] initWithObjects:filename,
+    return [[NSArray alloc] initWithObjects:(filename != nil) ? filename : [filePath lastPathComponent],
             [fileAttribs objectForKey:NSFileSize],
             [fileAttribs objectForKey:NSFileCreationDate],
             [fileAttribs objectForKey:NSFileModificationDate],
-            (_includeUniqueFileID) ? [FileXchange md5:filePath] : nil, nil];
+            (_includeUniqueFileID) ? [FileXchange md5:filePath] : @"",
+            (userInfo != nil) ? userInfo : @"", nil];
 }
 
 #pragma mark - Server
@@ -220,7 +225,7 @@
     }
 }
 
-- (NSURL *)prepareFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames
+- (NSURL *)prepareFiles:(NSArray *)files
 {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
@@ -233,7 +238,7 @@
     }
     while ([fileManager fileExistsAtPath:exchangeFilename]);
     
-    NSMutableDictionary *payload = [[NSMutableDictionary alloc] initWithCapacity:([filePaths isKindOfClass:[NSArray class]]) ? [filePaths count] + 6 : 6];
+    NSMutableDictionary *payload = [[NSMutableDictionary alloc] initWithCapacity:([files isKindOfClass:[NSArray class]]) ? [files count] + 6 : 6];
     
     [payload setObject:[NSNumber numberWithFloat:FILEXCHANGE_VERSION] forKey:@"FileXchangeVersion"];
     [payload setObject:uuid forKey:@"UUID"];
@@ -249,32 +254,40 @@
         [payload setObject:appIcon forKey:@"AppIconLarge"];
     }
     
-    if ([filePaths isKindOfClass:[NSArray class]])
+    if ([files isKindOfClass:[NSArray class]])
     {
         unsigned long long totalBytes = 0;
-        NSMutableArray *files = [[NSMutableArray alloc] initWithCapacity:[filePaths count]];
-        NSMutableArray *anonymizedFiles = [[NSMutableArray alloc] initWithCapacity:[filePaths count]];
+        NSMutableArray *filePaths = [[NSMutableArray alloc] initWithCapacity:[files count]];
+        NSMutableArray *anonymizedFiles = [[NSMutableArray alloc] initWithCapacity:[files count]];
 
-        for (int fileIndex = 0; fileIndex < [filePaths count]; fileIndex++)
+        for (int fileIndex = 0; fileIndex < [files count]; fileIndex++)
         {
             @autoreleasepool
             {
-                NSString *filePath = [filePaths objectAtIndex:fileIndex];
+                NSString *filePath = [files objectAtIndex:fileIndex];
+                NSString *suggestedFilename = nil;
+                id userInfo = nil;
+                if ([filePath isKindOfClass:[NSDictionary class]])
+                {
+                    suggestedFilename = [(NSDictionary *)filePath objectForKey:kFileXchangeSuggestedFilename];
+                    userInfo = [(NSDictionary *)filePath objectForKey:kFileXchangeUserInfo];
+                    filePath = [(NSDictionary *)filePath objectForKey:kFileXchangeFilePath];
+                }
                 if ([filePath isKindOfClass:[NSString class]])
                 {
                     NSDictionary *fileAttribs = [fileManager attributesOfItemAtPath:filePath error:NULL];
                     if (fileAttribs != nil)
                     {
                         totalBytes += [[fileAttribs objectForKey:NSFileSize] unsignedLongLongValue];
-                        [anonymizedFiles addObject:[self anonymizedFileInfoForFileAtPath:filePath fileAttributes:fileAttribs suggestedFilename:([suggestedFilenames isKindOfClass:[NSArray class]] && [suggestedFilenames count] == [filePaths count]) ? [suggestedFilenames objectAtIndex:fileIndex] : [filePath lastPathComponent]]];
-                        [files addObject:filePath];
+                        [anonymizedFiles addObject:[self anonymizedFileInfoForFileAtPath:filePath fileAttributes:fileAttribs suggestedFilename:suggestedFilename userInfo:userInfo]];
+                        [filePaths addObject:filePath];
                     }
                 }
             }
         }
         [payload setObject:[NSNumber numberWithUnsignedLongLong:totalBytes] forKey:@"TotalNumberOfBytes"];
         [payload setObject:anonymizedFiles forKey:@"Files"];
-        [payload setObject:files forKey:@"FilePaths"];
+        [payload setObject:filePaths forKey:@"FilePaths"];
     }
     
     if ([payload writeToFile:exchangeFilename atomically:YES] == NO)
@@ -286,10 +299,10 @@
     return [[NSURL alloc] initFileURLWithPath:exchangeFilename isDirectory:NO];
 }
 
-- (BOOL)presentMenuFromBarButtonItem:(UIBarButtonItem *)buttonItem animated:(BOOL)animated servingFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames
+- (BOOL)presentMenuFromBarButtonItem:(UIBarButtonItem *)buttonItem animated:(BOOL)animated servingFiles:(NSArray *)files
 {
     BOOL success = NO;
-    NSURL *exchangeURL = [self prepareFiles:filePaths suggestedFilenames:suggestedFilenames];
+    NSURL *exchangeURL = [self prepareFiles:files];
     if ([exchangeURL isKindOfClass:[NSURL class]])
     {
         [docIntController setURL:exchangeURL];
@@ -303,10 +316,10 @@
     return success;
 }
 
-- (BOOL)presentMenuFromRect:(CGRect)aRect inView:(id)inView animated:(BOOL)animated servingFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames
+- (BOOL)presentMenuFromRect:(CGRect)aRect inView:(id)inView animated:(BOOL)animated servingFiles:(NSArray *)files
 {
     BOOL success = NO;
-    NSURL *exchangeURL = [self prepareFiles:filePaths suggestedFilenames:suggestedFilenames];
+    NSURL *exchangeURL = [self prepareFiles:files];
     if ([exchangeURL isKindOfClass:[NSURL class]])
     {
         [docIntController setURL:exchangeURL];
@@ -325,32 +338,40 @@
     return [NSDictionary dictionaryWithDictionary:sharing];
 }
 
-- (void)addNewFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames toShare:(NSMutableDictionary *)sharingData
+- (void)addNewFiles:(NSArray *)files toShare:(NSMutableDictionary *)sharingData
 {
  	NSAssert(dispatch_get_current_queue() == sharingQueue, @"addNewFiles:toShare: must be called on the sharingQueue.");
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    
+        
     NSMutableArray *currentlySharedFiles = [sharingData objectForKey:@"Files"];
     NSMutableArray *filesWaitingToBeSent = [sharingData objectForKey:@"NewFiles"];
     if ([filesWaitingToBeSent isKindOfClass:[NSMutableArray class]] == NO)
     {
-        filesWaitingToBeSent = [[NSMutableArray alloc] initWithCapacity:[filePaths count]];
+        filesWaitingToBeSent = [[NSMutableArray alloc] initWithCapacity:[files count]];
     }
     unsigned long long totalBytes = [[sharingData objectForKey:@"TotalNumberOfBytes"] unsignedLongLongValue];
     
-    for (int fileIndex = 0; fileIndex < [filePaths count]; fileIndex++)
+    for (int fileIndex = 0; fileIndex < [files count]; fileIndex++)
     {
         @autoreleasepool
         {
-            NSString *filePath = [filePaths objectAtIndex:fileIndex];
+            NSString *filePath = [files objectAtIndex:fileIndex];
+            NSString *suggestedFilename = nil;
+            id userInfo = nil;
+            if ([filePath isKindOfClass:[NSDictionary class]])
+            {
+                suggestedFilename = [(NSDictionary *)filePath objectForKey:kFileXchangeSuggestedFilename];
+                userInfo = [(NSDictionary *)filePath objectForKey:kFileXchangeUserInfo];
+                filePath = [(NSDictionary *)filePath objectForKey:kFileXchangeFilePath];
+            }
             if ([filePath isKindOfClass:[NSString class]])
             {
                 NSDictionary *fileAttribs = [fileManager attributesOfItemAtPath:filePath error:NULL];
                 if (fileAttribs != nil)
                 {
                     totalBytes += [[fileAttribs objectForKey:NSFileSize] unsignedLongLongValue];
-                    [filesWaitingToBeSent addObject:[self anonymizedFileInfoForFileAtPath:filePath fileAttributes:fileAttribs suggestedFilename:([suggestedFilenames isKindOfClass:[NSArray class]] && [suggestedFilenames count] == [filePaths count]) ? [suggestedFilenames objectAtIndex:fileIndex] : [filePath lastPathComponent]]];
+                    [filesWaitingToBeSent addObject:[self anonymizedFileInfoForFileAtPath:filePath fileAttributes:fileAttribs suggestedFilename:suggestedFilename userInfo:userInfo]];
                     [currentlySharedFiles addObject:filePath];
                 }
             }
@@ -360,9 +381,9 @@
     [sharingData setObject:filesWaitingToBeSent forKey:@"NewFiles"];
 }
 
-- (BOOL)addNewFiles:(NSArray *)filePaths suggestedFilenames:(NSArray *)suggestedFilenames andNotifyApplication:(NSString *)application
+- (BOOL)addNewFiles:(NSArray *)files andNotifyApplication:(NSString *)application
 {
-    if ([filePaths isKindOfClass:[NSArray class]] == NO) return NO;
+    if ([files isKindOfClass:[NSArray class]] == NO) return NO;
     
     if ([application isKindOfClass:[NSString class]] == NO) return NO;
     
@@ -377,7 +398,7 @@
         if ([sharingData isKindOfClass:[NSMutableDictionary class]])
         {
             sharingDataBackup = [sharingData mutableCopy];
-            [self addNewFiles:filePaths suggestedFilenames:suggestedFilenames toShare:sharingData];
+            [self addNewFiles:files toShare:sharingData];
         }
         
         reqString = [NSString stringWithFormat:@"http://localhost:%d/update?app=%@",[[sharingData objectForKey:@"RemotePort"] unsignedShortValue],[[NSBundle mainBundle] bundleIdentifier]];
@@ -420,7 +441,7 @@
         
         NSMutableDictionary *connectionInfo = [[NSMutableDictionary alloc] initWithContentsOfURL:url];
         
-        NSArray *filePaths = [connectionInfo objectForKey:@"FilePaths"];
+        NSArray *files = [connectionInfo objectForKey:@"FilePaths"];
         [connectionInfo removeObjectForKey:@"FilePaths"];
         
         NSMutableDictionary *sharingInfo = [sharing objectForKey:application];
@@ -429,13 +450,8 @@
         {
             // Already sharing
             DLog(@"Already sharing, adding to share.");
-            NSMutableArray *suggestedFilenames = [[NSMutableArray alloc] initWithCapacity:[filePaths count]];
-            for (NSArray *anonymizedFileInfo in [connectionInfo objectForKey:@"Files"])
-            {
-                [suggestedFilenames addObject:[anonymizedFileInfo objectAtIndex:0]];
-            }
             [connectionInfo writeToURL:url atomically:YES];
-            [self addNewFiles:filePaths suggestedFilenames:suggestedFilenames toShare:sharingInfo];
+            [self addNewFiles:files toShare:sharingInfo];
         }
         else
         {
@@ -448,8 +464,8 @@
             [connectionInfo setObject:[NSNumber numberWithUnsignedShort:[self listeningPort]] forKey:@"Port"];
             [connectionInfo writeToURL:url atomically:YES];
             
-            [connectionInfo setObject:filePaths forKey:@"Files"];
-            filePaths = nil;
+            [connectionInfo setObject:files forKey:@"Files"];
+            files = nil;
             [sharing setObject:connectionInfo forKey:application];
         }
         

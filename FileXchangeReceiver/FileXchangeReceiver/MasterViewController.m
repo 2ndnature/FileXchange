@@ -90,7 +90,7 @@
     NSDictionary *data = [info objectForKey:@"Data"];
     if ([data isKindOfClass:[NSDictionary class]] == NO) return;
     
-    DLog(@"%@ has %d file%@ for us!",[data objectForKey:@"AppName"],[[data objectForKey:@"Files"] count], ([[data objectForKey:@"Files"] count] == 1) ? @"" : @"s" );
+    DLog(@"%@ has %d file%@ for us: %@",[data objectForKey:@"AppName"],[[data objectForKey:@"Files"] count], ([[data objectForKey:@"Files"] count] == 1) ? @"" : @"s", [[data objectForKey:@"Files"] description]);
     
     if (_fileXchange == nil)
     {

@@ -78,7 +78,7 @@
             NSString *streamApp = [[[_fileXchange sharingInfo] allKeys] objectAtIndex:0];
             if (streamApp != nil)
             {
-                if ([_fileXchange addNewFiles:[self selectedFiles] suggestedFilenames:nil andNotifyApplication:streamApp])
+                if ([_fileXchange addNewFiles:[self selectedFiles] andNotifyApplication:streamApp])
                 {
                     DLog(@"Notification delivered.");
                     return;
@@ -106,27 +106,34 @@
 
 - (NSMutableArray *)selectedFiles
 {
-    NSMutableArray *shareFiles = [[NSMutableArray alloc] initWithCapacity:[_selection count]];
-    for (NSString *key in _selection)
+    NSMutableArray *files = [[NSMutableArray alloc] initWithCapacity:[_selection count]];
+    if (DEMO_SUGGESTED_FILENAMES_AND_USER_INFO)
     {
-        [shareFiles addObject:[_exampleFilesFolder stringByAppendingPathComponent:[_objects objectAtIndex:[key integerValue]]]];
+        int i = 0;
+        for (NSString *key in _selection)
+        {
+            NSString *filePath = [_exampleFilesFolder stringByAppendingPathComponent:[_objects objectAtIndex:[key integerValue]]];
+            [files addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                              filePath,kFileXchangeFilePath,
+                              [NSString stringWithFormat:@"%d.%@",i,[filePath pathExtension]],kFileXchangeSuggestedFilename,
+                              [NSDictionary dictionaryWithObjectsAndKeys:@"UserInfo 1", @"Parm 1", @"UserInfo 2", @"Parm 2", nil], kFileXchangeUserInfo,
+                              nil]];
+            i++;
+        }
     }
-    return shareFiles;
+    else
+    {
+        for (NSString *key in _selection)
+        {
+            [files addObject:[_exampleFilesFolder stringByAppendingPathComponent:[_objects objectAtIndex:[key integerValue]]]];
+        }
+    }
+    return files;
 }
 
 - (void)shareFiles:(id)sender
 {
-    NSArray *selectedFiles = [self selectedFiles];
-    NSMutableArray *suggestedFilenames = nil;
-    if (DEMO_SUGGESTED_FILENAMES)
-    {
-        suggestedFilenames = [[NSMutableArray alloc] initWithCapacity:[selectedFiles count]];
-        for (int i = 0; i < [selectedFiles count]; i++)
-        {
-            [suggestedFilenames addObject:[NSString stringWithFormat:@"%d.%@",i,[[selectedFiles objectAtIndex:i] pathExtension]]];
-        }
-    }
-    [_fileXchange presentMenuFromBarButtonItem:sender animated:YES servingFiles:selectedFiles suggestedFilenames:suggestedFilenames];
+    [_fileXchange presentMenuFromBarButtonItem:sender animated:YES servingFiles:[self selectedFiles]];
 }
 
 #pragma mark - Table View
