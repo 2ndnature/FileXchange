@@ -41,11 +41,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1</string>
+	<string>1.2</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.1</string>
+	<string>1.2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -83,7 +83,7 @@
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.2ndnature.FileXchange</string>
+				<string>com.2ndnature.filexchange</string>
 			</array>
 		</dict>
 	</array>
@@ -110,7 +110,7 @@
 			<key>UTTypeDescription</key>
 			<string>FileXchange data</string>
 			<key>UTTypeIdentifier</key>
-			<string>com.2ndnature.FileXchange</string>
+			<string>com.2ndnature.filexchange</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

@@ -14,7 +14,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #define PULSE_INTERVAL          10.0
-#define FILEXCHANGE_VERSION     1.1
+#define FILEXCHANGE_VERSION     1.2
 
 NSString *const kFileXchangeFilePath = @"kFileXchangeFilePath";
 NSString *const kFileXchangeSuggestedFilename = @"kFileXchangeSuggestedFilename";
@@ -125,7 +125,7 @@ NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
         _delegate = nil;
         docIntController = [[UIDocumentInteractionController alloc] init];
         [docIntController setDelegate:self];
-        [docIntController setUTI:@"com.2ndnature.FileXchange"];
+        [docIntController setUTI:@"com.2ndnature.filexchange"];
         sharing = [[NSMutableDictionary alloc] initWithCapacity:1];
         servers = [[NSMutableDictionary alloc] initWithCapacity:1];
         sharingQueue = dispatch_queue_create("com.2ndnature.FileXchangeSharingQueue", NULL);
@@ -767,7 +767,7 @@ NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
     dispatch_sync(sharingQueue, ^{
         
         NSArray *files = [fileExhangeData objectForKey:@"Files"];
-        if (index < [files count])
+        if ([files isKindOfClass:[NSArray class]] && index < [files count])
         {
             remoteFileInfo = [files objectAtIndex:index];
             if ([remoteFileInfo isKindOfClass:[NSArray class]] == NO)
@@ -938,18 +938,20 @@ NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
     
     BOOL successfulUpdate = [self updateFileAttributesOnFile:targetFile fromFileAtIndex:index fromApplication:application];
     
-    if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:)])
+    if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:userInfo:)])
     {
+        NSArray *fileAttributes = [self infoForFileAtIndex:index fromApplication:application];
+        id userInfo = ([fileAttributes count] > 4) ? [fileAttributes objectAtIndex:5] : nil;
         if ([NSThread isMainThread])
         {
-            [_delegate fileXchange:self application:application didFinishDownload:targetFile];
+            [_delegate fileXchange:self application:application didFinishDownload:targetFile userInfo:userInfo];
         }
         else
         {
             NSString *theFilename = [targetFile copy];
             NSString *theApplication = [application copy];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [_delegate fileXchange:self application:theApplication didFinishDownload:theFilename];
+                [_delegate fileXchange:self application:theApplication didFinishDownload:theFilename userInfo:userInfo];
             });
         }
     }
@@ -1019,9 +1021,11 @@ NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
         NSString *application = [fileDownloadApplication copy];
         [self downloadDone];
         
-        if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:)])
+        if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:userInfo:)])
         {
-            [_delegate fileXchange:self application:application didFinishDownload:filename];
+            NSArray *fileAttributes = [self infoForFileAtIndex:index fromApplication:application];
+            id userInfo = ([fileAttributes count] > 4) ? [fileAttributes objectAtIndex:5] : nil;
+            [_delegate fileXchange:self application:application didFinishDownload:filename userInfo:userInfo];
         }
     }
 }

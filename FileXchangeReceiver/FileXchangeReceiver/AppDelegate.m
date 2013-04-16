@@ -28,7 +28,7 @@
     if ([url isKindOfClass:[NSURL class]])
 	{
         NSString *uti = nil;
-        if ([url getResourceValue:&uti forKey:NSURLTypeIdentifierKey error:NULL] && [uti caseInsensitiveCompare:@"com.2ndnature.FileXchange"] == NSOrderedSame)
+        if ([url getResourceValue:&uti forKey:NSURLTypeIdentifierKey error:NULL] && [uti caseInsensitiveCompare:@"com.2ndnature.filexchange"] == NSOrderedSame)
         {
             DLog(@"Post notification");
             NSDictionary *fileXchangeData = [NSDictionary dictionaryWithContentsOfURL:url];

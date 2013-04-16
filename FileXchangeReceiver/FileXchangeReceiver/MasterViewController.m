@@ -275,7 +275,7 @@
     }
 }
 
-- (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFinishDownload:(NSString *)filePath
+- (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFinishDownload:(NSString *)filePath userInfo:(id)userInfo
 {
     if (DEMO_FINE_GRAINED_UPDATES_ON_RUNLOOP)
     {

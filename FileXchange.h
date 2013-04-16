@@ -73,7 +73,7 @@ typedef NSInteger FileXchangeAppIconSize;
 - (void)fileXchange:(FileXchange *)fe applicationDidAcceptSharing:(NSString *)application;
 - (void)fileXchange:(FileXchange *)fe applicationDidCloseConnection:(NSString *)application;
 - (void)fileXchange:(FileXchange *)fe application:(NSString *)application downloadedBytes:(NSUInteger)bytes soFar:(NSUInteger)bytesSoFar totalBytes:(NSUInteger)totalBytes;
-- (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFinishDownload:(NSString *)filePath;
+- (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFinishDownload:(NSString *)filePath userInfo:(id)userInfo;
 - (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFailWithError:(NSError *)error;
 - (void)fileXchange:(FileXchange *)fe application:(NSString *)application newFilesAdded:(NSRange)range;
 
@@ -101,7 +101,7 @@ typedef NSInteger FileXchangeAppIconSize;
  <string>Alternate</string>
  <key>LSItemContentTypes</key>
  <array>
- <string>com.2ndnature.FileXchange</string>
+ <string>com.2ndnature.filexchange</string>
  </array>
  </dict>
  </array>
@@ -119,7 +119,7 @@ typedef NSInteger FileXchangeAppIconSize;
  <key>UTTypeDescription</key>
  <string>FileXchange data</string>
  <key>UTTypeIdentifier</key>
- <string>com.2ndnature.FileXchange</string>
+ <string>com.2ndnature.filexchange</string>
  <key>UTTypeTagSpecification</key>
  <dict>
  <key>public.filename-extension</key>
