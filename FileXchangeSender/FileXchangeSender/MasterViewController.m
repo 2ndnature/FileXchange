@@ -99,8 +99,14 @@
 - (void)updateButtons
 {
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Invert", @"Invert button") style:UIBarButtonItemStyleBordered target:self action:@selector(invertSelection:)];
-    self.navigationItem.rightBarButtonItem = (DEMO_STREAMING && [[[_fileXchange sharingInfo] allKeys] count]) ? [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Push", @"Push button") style:UIBarButtonItemStyleBordered target:self action:@selector(pushSelection:)] : [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(shareFiles:)];
-    
+    if (DEMO_STREAMING && [[[_fileXchange sharingInfo] allKeys] count])
+    {
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Push", @"Push button") style:UIBarButtonItemStyleBordered target:self action:@selector(pushSelection:)];
+    }
+    else
+    {
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"Service-icon-inverted-32px-PhotoCopy"] style:UIBarButtonItemStyleBordered target:self action:@selector(shareFiles:)];
+    }
     [self.navigationItem.rightBarButtonItem setEnabled:([_selection count] > 0)];
 }
 

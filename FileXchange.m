@@ -20,6 +20,11 @@ NSString *const kFileXchangeFilePath = @"kFileXchangeFilePath";
 NSString *const kFileXchangeSuggestedFilename = @"kFileXchangeSuggestedFilename";
 NSString *const kFileXchangeUserInfo = @"kFileXchangeUserInfo";
 
+// The PhotoCopy service uses FileXchange and passes an NSDictionary as UserInfo for files if needed.
+// The following is a list of standard keys used in that dictionary.
+
+NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString";
+
 @interface FileXchange () <UIDocumentInteractionControllerDelegate>
 {
 	UIDocumentInteractionController *docIntController;

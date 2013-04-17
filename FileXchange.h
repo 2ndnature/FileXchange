@@ -14,6 +14,11 @@ extern NSString *const kFileXchangeFilePath;
 extern NSString *const kFileXchangeSuggestedFilename;
 extern NSString *const kFileXchangeUserInfo;
 
+// The PhotoCopy service uses FileXchange and passes an NSDictionary as UserInfo for files if needed.
+// The following is a list of standard keys used in that dictionary.
+
+extern NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString;
+
 #define DEBUGGING 1
 
 #if DEBUGGING
