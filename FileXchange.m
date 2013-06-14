@@ -14,7 +14,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #define PULSE_INTERVAL          10.0
-#define FILEXCHANGE_VERSION     1.2
+#define FILEXCHANGE_VERSION     1.3
 
 NSString *const kFileXchangeFilePath = @"kFileXchangeFilePath";
 NSString *const kFileXchangeSuggestedFilename = @"kFileXchangeSuggestedFilename";
@@ -421,7 +421,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         
     });
     
-    if (notificationDelivered == NO)
+    if (notificationDelivered == NO && sharingDataBackup != nil)
     {
         dispatch_sync(sharingQueue, ^{
             
@@ -897,71 +897,74 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 
 - (BOOL)synchronouslyDownloadFileAtIndex:(NSUInteger)index fromApplication:(NSString *)application toFolder:(NSString *)destinationFolder
 {
-    BOOL isDir = NO;
-    if ([[NSFileManager defaultManager] fileExistsAtPath:destinationFolder isDirectory:&isDir] == NO || isDir == NO)
+    @autoreleasepool
     {
-        DLog(@"Error. Destination folder does not exist.");
-        return NO;
-    }
-    
-    NSArray *remoteFileInfo = [self infoForFileAtIndex:index fromApplication:application];
-    if ([remoteFileInfo count] < 4)
-    {
-        if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
+        BOOL isDir = NO;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:destinationFolder isDirectory:&isDir] == NO || isDir == NO)
         {
-            NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.",@""),NSLocalizedDescriptionKey,nil]];
+            DLog(@"Error. Destination folder does not exist.");
+            return NO;
+        }
+        
+        NSArray *remoteFileInfo = [self infoForFileAtIndex:index fromApplication:application];
+        if ([remoteFileInfo count] < 4)
+        {
+            if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
+            {
+                NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.",@""),NSLocalizedDescriptionKey,nil]];
+                if ([NSThread isMainThread])
+                {
+                    [_delegate fileXchange:self application:application didFailWithError:error];
+                }
+                else
+                {
+                    NSString *theApplication = [application copy];
+                    NSError *theError = [error copy];
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [_delegate fileXchange:self application:theApplication didFailWithError:theError];
+                    });
+                }
+            }
+            DLog(@"Error. Invalid file information retrieved: %@",[remoteFileInfo description]);
+            return NO;
+        }
+        
+        NSData *data = [self synchronouslyDownloadFileAtIndex:index fromApplication:application returningResponse:NULL error:NULL];
+        if (data == nil)
+        {
+            DLog(@"Error. No data downloaded.");
+            return NO;
+        }
+        
+        NSString *targetFile = [destinationFolder stringByAppendingPathComponent:[remoteFileInfo objectAtIndex:0]];
+        if ([data writeToFile:targetFile atomically:YES] == NO)
+        {
+            DLog(@"Error. Failed to save the file %@",targetFile);
+            return NO;
+        }
+        
+        BOOL successfulUpdate = [self updateFileAttributesOnFile:targetFile fromFileAtIndex:index fromApplication:application];
+        
+        if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:userInfo:)])
+        {
+            NSArray *fileAttributes = [self infoForFileAtIndex:index fromApplication:application];
+            id userInfo = ([fileAttributes count] > 4) ? [fileAttributes objectAtIndex:5] : nil;
             if ([NSThread isMainThread])
             {
-                [_delegate fileXchange:self application:application didFailWithError:error];
+                [_delegate fileXchange:self application:application didFinishDownload:targetFile userInfo:userInfo];
             }
             else
             {
+                NSString *theFilename = [targetFile copy];
                 NSString *theApplication = [application copy];
-                NSError *theError = [error copy];
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [_delegate fileXchange:self application:theApplication didFailWithError:theError];
+                    [_delegate fileXchange:self application:theApplication didFinishDownload:theFilename userInfo:userInfo];
                 });
             }
         }
-        DLog(@"Error. Invalid file information retrieved: %@",[remoteFileInfo description]);
-        return NO;
+        
+        return successfulUpdate;
     }
-    
-    NSData *data = [self synchronouslyDownloadFileAtIndex:index fromApplication:application returningResponse:NULL error:NULL];
-    if (data == nil)
-    {
-        DLog(@"Error. No data downloaded.");
-        return NO;
-    }
-    
-    NSString *targetFile = [destinationFolder stringByAppendingPathComponent:[remoteFileInfo objectAtIndex:0]];
-    if ([data writeToFile:targetFile atomically:YES] == NO)
-    {
-        DLog(@"Error. Failed to save the file %@",targetFile);
-        return NO;
-    }
-    
-    BOOL successfulUpdate = [self updateFileAttributesOnFile:targetFile fromFileAtIndex:index fromApplication:application];
-    
-    if ([_delegate respondsToSelector:@selector(fileXchange:application:didFinishDownload:userInfo:)])
-    {
-        NSArray *fileAttributes = [self infoForFileAtIndex:index fromApplication:application];
-        id userInfo = ([fileAttributes count] > 4) ? [fileAttributes objectAtIndex:5] : nil;
-        if ([NSThread isMainThread])
-        {
-            [_delegate fileXchange:self application:application didFinishDownload:targetFile userInfo:userInfo];
-        }
-        else
-        {
-            NSString *theFilename = [targetFile copy];
-            NSString *theApplication = [application copy];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [_delegate fileXchange:self application:theApplication didFinishDownload:theFilename userInfo:userInfo];
-            });
-        }
-    }
-    
-    return successfulUpdate;
 }
 
 

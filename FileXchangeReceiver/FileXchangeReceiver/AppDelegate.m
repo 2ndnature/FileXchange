@@ -39,6 +39,10 @@
             
             return YES;
         }
+        else
+        {
+            NSLog(@"Unsupported UTI: %@",uti);
+        }
         
         // Multitasking time limit workaround for large transfers.
         if ([[url absoluteString] isEqualToString:TIME_LIMIT_CALLBACK])
