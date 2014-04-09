@@ -7,7 +7,7 @@ Transfers and communication are done using Robbie Hanson's CocoaHTTPServer class
 
 PhotoCopy
 =========
-Upcoming versions of [Photosmith](http://www.photosmithapp.com) and [ShutterSnitch](http://www.shuttersnitch.com) will use FileXchange to share photos specifically, dubbing the service "PhotoCopy".
+Photosmith and ShutterSnitch use FileXchange to share photos specifically, dubbing the service "PhotoCopy".
 
 If you wish to add PhotoCopy to your app:
 
@@ -17,3 +17,9 @@ If you wish to add PhotoCopy to your app:
 If you have any questions about implementation or want your PhotoCopy-enabled app listed here, please tweet me @2ndNatureDev.
 
 FileXchange and PhotoCopy are free for all to use / implement.
+
+Apps that use PhotoCopy
+=======================
+[Photosmith](http://www.photosmithapp.com)
+[ShutterSnitch](http://www.shuttersnitch.com)
+[FlickStackr](http://ipont.ca/ip/flickstackr/index.html)

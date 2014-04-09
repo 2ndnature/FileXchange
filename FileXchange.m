@@ -13,6 +13,10 @@
 #include <sys/time.h>
 #import <CommonCrypto/CommonDigest.h>
 
+#if ! __has_feature(objc_arc)
+#error This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
+#endif
+
 #define PULSE_INTERVAL          10.0
 #define FILEXCHANGE_VERSION     1.3
 
