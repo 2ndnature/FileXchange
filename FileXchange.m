@@ -18,7 +18,7 @@
 #endif
 
 #define PULSE_INTERVAL          10.0
-#define FILEXCHANGE_VERSION     1.3
+#define FILEXCHANGE_VERSION     1.4
 
 NSString *const kFileXchangeFilePath = @"kFileXchangeFilePath";
 NSString *const kFileXchangeSuggestedFilename = @"kFileXchangeSuggestedFilename";
@@ -70,7 +70,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 	CFStringGetCString(myUUIDString, strBuffer, 100, kCFStringEncodingASCII);
 	CFRelease(myUUID);
 	CFRelease(myUUIDString);
-	return [NSString stringWithFormat:@"%s",strBuffer];
+	return [NSString stringWithFormat:@"%s", strBuffer];
 }
 
 + (UInt16)randomPort
@@ -89,7 +89,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 {
 	const char *cstr = [(str) ? str : @"" cStringUsingEncoding:NSUTF8StringEncoding];
 	unsigned char md5_result[CC_MD5_DIGEST_LENGTH];
-	CC_MD5(cstr, strlen(cstr), md5_result);
+	CC_MD5(cstr, (unsigned int)strlen(cstr), md5_result);
 	return [[NSString stringWithFormat: @"%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
 			 md5_result[0], md5_result[1],
 			 md5_result[2], md5_result[3],
@@ -105,7 +105,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 {
     DLog(@"dealloc");
     [self cancelDownload];
-    if ([self isRunning]) DLog(@"Stopping server running on port %d",[self listeningPort]);
+    if ([self isRunning]) DLog(@"Stopping server running on port %d", [self listeningPort]);
     [self stop:NO];
     _delegate = nil;
 	docIntController.delegate = nil;
@@ -113,7 +113,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     servers = nil;
     if (clientActive > 0)
     {
-        DLog(@"Stopping client background task %d",clientActive);
+        DLog(@"Stopping client background task %lu", (unsigned long)clientActive);
         [[UIApplication sharedApplication] endBackgroundTask:clientActive];
         clientActive = 0;
     }
@@ -230,7 +230,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
             [self setPort:[FileXchange randomPort]];
         }
         while ([self start:NULL] == NO);
-        DLog(@"Server started on port %d",[self listeningPort]);
+        DLog(@"Server started on port %d", [self listeningPort]);
     }
 }
 
@@ -243,7 +243,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     do
     {
         uuid = [FileXchange generateUUID];
-        exchangeFilename = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.fxch",uuid]];
+        exchangeFilename = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.fxch", uuid]];
     }
     while ([fileManager fileExistsAtPath:exchangeFilename]);
     
@@ -252,6 +252,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     [payload setObject:[NSNumber numberWithFloat:FILEXCHANGE_VERSION] forKey:@"FileXchangeVersion"];
     [payload setObject:uuid forKey:@"UUID"];
     [payload setObject:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleDisplayName"] forKey:@"AppName"];
+    [payload setObject:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIdentifier"] forKey:@"AppBundleID"];
     NSData *appIcon = UIImagePNGRepresentation([self appIconOfSize:FileXchangeAppIconSizeSmall]);
     if (appIcon != nil)
     {
@@ -410,7 +411,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
             [self addNewFiles:files toShare:sharingData];
         }
         
-        reqString = [NSString stringWithFormat:@"http://localhost:%d/update?app=%@",[[sharingData objectForKey:@"RemotePort"] unsignedShortValue],[[NSBundle mainBundle] bundleIdentifier]];
+        reqString = [NSString stringWithFormat:@"http://localhost:%d/update?app=%@", [[sharingData objectForKey:@"RemotePort"] unsignedShortValue], [[NSBundle mainBundle] bundleIdentifier]];
     });
     
     // We're splitting up the dispatch calls because the client will needs to get
@@ -442,7 +443,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     if ([application isKindOfClass:[NSString class]] == NO) return;
     if ([application length] <= 0) return;
     
-    DLog(@"startServing: %@ toApplication %@",[url lastPathComponent],application);
+    DLog(@"startServing: %@ toApplication %@", [url lastPathComponent], application);
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(checkPulse) object:nil];
     
@@ -465,7 +466,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         else
         {
             UIBackgroundTaskIdentifier bgTId = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{}];
-            DLog(@"Starting server background task %d",bgTId);
+            DLog(@"Starting server background task %lu", (unsigned long)bgTId);
             [connectionInfo setObject:[NSNumber numberWithUnsignedInteger:bgTId] forKey:@"BackgroundTaskIdentifier"];
             
             [self startServer];
@@ -495,7 +496,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     
     if (remotePort > 0)
     {
-        NSString *reply = [[NSString alloc] initWithData:[NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%d/ping",remotePort]]
+        NSString *reply = [[NSString alloc] initWithData:[NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%d/ping", remotePort]]
                                                                                                                   cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
                                                                                                               timeoutInterval:10.0] returningResponse:NULL error:NULL] encoding:NSUTF8StringEncoding];
         pong = [reply isEqualToString:@"pong"];
@@ -503,7 +504,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     
     if (pong == NO)
     {
-        DLog(@"No answer from %@ on port %d.",application,remotePort);
+        DLog(@"No answer from %@ on port %d.", application, remotePort);
         
         [sharing removeObjectForKey:application];
         
@@ -511,13 +512,13 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         if ([backgroundTaskIdentifier isKindOfClass:[NSNumber class]])
         {
             UIBackgroundTaskIdentifier bgTId = [backgroundTaskIdentifier unsignedIntegerValue];
-            DLog(@"Stopping server background task %d for %@",bgTId,application);
+            DLog(@"Stopping server background task %lu for %@", (unsigned long)bgTId, application);
             [[UIApplication sharedApplication] endBackgroundTask:bgTId];
         }
         
         if ([sharing count] == 0)
         {
-            DLog(@"No clients. Turning off server on port %d.",[self listeningPort]);
+            DLog(@"No clients. Turning off server on port %d.", [self listeningPort]);
             [self stop:NO];
         }
         
@@ -542,7 +543,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         
         for (NSString *application in sharing)
         {
-            DLog(@"Checking pulse on %@",application);
+            DLog(@"Checking pulse on %@", application);
             if ([self ping:application])
             {
                 living = YES;
@@ -553,7 +554,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     
     if (living)
     {
-        DLog(@"It's aliiive. Will check again in %1.0f seconds",PULSE_INTERVAL);
+        DLog(@"It's aliiive. Will check again in %1.0f seconds", PULSE_INTERVAL);
         [self performSelector:@selector(checkPulse) withObject:nil afterDelay:PULSE_INTERVAL];
     }
 }
@@ -562,11 +563,11 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 {
     if (transit)
     {
-        DLog(@"Error. Application %@ is not receiving the payload.",application);
+        DLog(@"Error. Application %@ is not receiving the payload.", application);
         transit = NO;
         if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
         {
-            NSError *error = [NSError errorWithDomain:@"" code:504 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Target application is not responding.",@""),NSLocalizedDescriptionKey,nil]];
+            NSError *error = [NSError errorWithDomain:@"" code:504 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Target application is not responding.", @""),NSLocalizedDescriptionKey,nil]];
             [_delegate fileXchange:self application:application didFailWithError:error];
         }
     }
@@ -576,7 +577,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 
 - (void)requestStart:(NSString *)application uuid:(NSString *)uuid port:(NSUInteger)remotePort
 {
-    DLog(@"Client %@ is alive on port %d",application,remotePort);
+    DLog(@"Client %@ is alive on port %lu", application, (unsigned long)remotePort);
     
     if (remotePort <= 0) return;
     
@@ -629,7 +630,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         
     });
     
-    DLog(@"new files: %@",[result description]);
+    DLog(@"new files: %@", [result description]);
     
     return result;
 }
@@ -655,7 +656,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         if (clientActive <= 0)
         {
             clientActive = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{}];
-            DLog(@"Starting client background task %d",clientActive);
+            DLog(@"Starting client background task %lu", (unsigned long)clientActive);
         }
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -688,7 +689,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
                     }
                     return;
                 }
-                DLog(@"Port has changed. Reboot the server. Stopping server that is currently running on port %d",[self listeningPort]);
+                DLog(@"Port has changed. Reboot the server. Stopping server that is currently running on port %d", [self listeningPort]);
                 [self stop:NO];
             }
             
@@ -696,10 +697,10 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
             
             [self startServer]; // Well... "startClient" would be a better description.
             
-            NSData *replyData = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%d/connection?begin=%@&port=%d&app=%@",[[feData objectForKey:@"Port"] unsignedShortValue],[feData objectForKey:@"UUID"],[self listeningPort],[[NSBundle mainBundle] bundleIdentifier]]]
+            NSData *replyData = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%d/connection?begin=%@&port=%d&app=%@", [[feData objectForKey:@"Port"] unsignedShortValue],[feData objectForKey:@"UUID"],[self listeningPort],[[NSBundle mainBundle] bundleIdentifier]]]
                                                                                          cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
                                                                                      timeoutInterval:10.0] returningResponse:NULL error:NULL];
-            DLog(@"Engage with %@. Reply: %@",application,[[NSString alloc] initWithData:replyData encoding:NSUTF8StringEncoding]);
+            DLog(@"Engage with %@. Reply: %@", application, [[NSString alloc] initWithData:replyData encoding:NSUTF8StringEncoding]);
             replyData = nil;
             
             if ([newFiles count] > 0)
@@ -726,8 +727,8 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 - (NSURLRequest *)requestForFileAtIndex:(NSUInteger)index fromApplication:(NSString *)application
 {
     NSDictionary *fileExhangeData = [self fileXchangeDataForApplication:application];
-    NSString *urlStr = [NSString stringWithFormat:@"http://localhost:%d/file?idx=%d&app=%@",[[fileExhangeData objectForKey:@"Port"] unsignedShortValue],index,[[NSBundle mainBundle] bundleIdentifier]];
-    // DLog(@"req: %@",urlStr);
+    NSString *urlStr = [NSString stringWithFormat:@"http://localhost:%d/file?idx=%lu&app=%@", [[fileExhangeData objectForKey:@"Port"] unsignedShortValue], (unsigned long)index, [[NSBundle mainBundle] bundleIdentifier]];
+    // DLog(@"req: %@", urlStr);
     return [NSURLRequest requestWithURL:[NSURL URLWithString:urlStr]
                             cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
                         timeoutInterval:10.0];
@@ -738,7 +739,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     NSDictionary *fileExhangeData = [self fileXchangeDataForApplication:application];
     if ([fileExhangeData isKindOfClass:[NSDictionary class]] == NO)
     {
-        DLog(@"Error. Don't know anything about application %@",application);
+        DLog(@"Error. Don't know anything about application %@", application);
         return nil;
     }
     
@@ -753,7 +754,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     
     if (index >= currentNumberOfFiles)
     {
-        DLog(@"Error. Invalid index %d. We only have %d file%@.",index,currentNumberOfFiles,(currentNumberOfFiles == 1) ? @"" : @"s");
+        DLog(@"Error. Invalid index %lu. We only have %lu file%@.", (unsigned long)index, (unsigned long)currentNumberOfFiles, (currentNumberOfFiles == 1) ? @"" : @"s");
         return nil;
     }
     
@@ -794,14 +795,14 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
 {
     if ([[NSFileManager defaultManager] fileExistsAtPath:filePath] == NO)
     {
-        DLog(@"Error. Couldn't set file attributes. The file %@ does not exist.",filePath);
+        DLog(@"Error. Couldn't set file attributes. The file %@ does not exist.", filePath);
         return NO;
     }
     
     NSDictionary *fileAttribs = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:NULL];
     if ([fileAttribs isKindOfClass:[NSDictionary class]] == NO)
     {
-        DLog(@"Error. Failed to get file attributes for file %@.",filePath);
+        DLog(@"Error. Failed to get file attributes for file %@.", filePath);
         return NO;
     }
     
@@ -810,10 +811,10 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     {
         if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
         {
-            NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.",@""),NSLocalizedDescriptionKey,nil]];
+            NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.", @""),NSLocalizedDescriptionKey,nil]];
             [_delegate fileXchange:self application:fileDownloadApplication didFailWithError:error];
         }
-        DLog(@"Error. Invalid file information retrieved: %@",[remoteFileInfo description]);
+        DLog(@"Error. Invalid file information retrieved: %@", [remoteFileInfo description]);
         return NO;
     }
     
@@ -825,7 +826,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     
     if (success == NO)
     {
-        DLog(@"Error. Failed to set file attributes for file %@.",filePath);
+        DLog(@"Error. Failed to set file attributes for file %@.", filePath);
     }
     
     return success;
@@ -845,10 +846,10 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     {
         if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
         {
-            NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.",@""),NSLocalizedDescriptionKey,nil]];
+            NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.", @""),NSLocalizedDescriptionKey,nil]];
             [_delegate fileXchange:self application:fileDownloadApplication didFailWithError:error];
         }
-        DLog(@"Error. Invalid file information retrieved: %@",[remoteFileInfo description]);
+        DLog(@"Error. Invalid file information retrieved: %@", [remoteFileInfo description]);
         return;
     }
     
@@ -861,7 +862,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     fileDownloadFilePath = [destinationFolder stringByAppendingPathComponent:[remoteFileInfo objectAtIndex:0]];
     if ([@"" writeToFile:fileDownloadFilePath atomically:YES encoding:NSUTF8StringEncoding error:NULL] == NO)
     {
-        DLog(@"Error. Couldn't write new file %@",fileDownloadFilePath);
+        DLog(@"Error. Couldn't write new file %@", fileDownloadFilePath);
         fileDownloadFilePath = nil;
         return;
     }
@@ -915,7 +916,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         {
             if ([_delegate respondsToSelector:@selector(fileXchange:application:didFailWithError:)])
             {
-                NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.",@""),NSLocalizedDescriptionKey,nil]];
+                NSError *error = [NSError errorWithDomain:@"" code:417 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:NSLocalizedString(@"Invalid file information retrieved.", @""),NSLocalizedDescriptionKey,nil]];
                 if ([NSThread isMainThread])
                 {
                     [_delegate fileXchange:self application:application didFailWithError:error];
@@ -929,7 +930,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
                     });
                 }
             }
-            DLog(@"Error. Invalid file information retrieved: %@",[remoteFileInfo description]);
+            DLog(@"Error. Invalid file information retrieved: %@", [remoteFileInfo description]);
             return NO;
         }
         
@@ -943,7 +944,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
         NSString *targetFile = [destinationFolder stringByAppendingPathComponent:[remoteFileInfo objectAtIndex:0]];
         if ([data writeToFile:targetFile atomically:YES] == NO)
         {
-            DLog(@"Error. Failed to save the file %@",targetFile);
+            DLog(@"Error. Failed to save the file %@", targetFile);
             return NO;
         }
         
@@ -982,7 +983,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     unsigned short remotePort = [[fileExhangeData objectForKey:@"Port"] unsignedShortValue];
     if (remotePort == 0) return NO;
     
-    NSString *str = [NSString stringWithFormat:@"http://localhost:%d/newfiles?app=%@",remotePort,[[NSBundle mainBundle] bundleIdentifier]];
+    NSString *str = [NSString stringWithFormat:@"http://localhost:%d/newfiles?app=%@", remotePort, [[NSBundle mainBundle] bundleIdentifier]];
     
     NSArray *newFiles = [[NSArray alloc] initWithContentsOfURL:[NSURL URLWithString:str]];
     
@@ -1061,14 +1062,10 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
     [self performSelector:@selector(deliveryCheck:) withObject:application afterDelay:5.0];
 }
 
-- (void)documentInteractionControllerDidDismissOpenInMenu: (UIDocumentInteractionController *) controller
-{
-    [[NSFileManager defaultManager] removeItemAtURL:[controller URL] error:NULL];
-}
-
 - (void)documentInteractionController:(UIDocumentInteractionController *)controller didEndSendingToApplication:(NSString *)application
 {
     transit = NO;
+    [[NSFileManager defaultManager] removeItemAtURL:[controller URL] error:NULL];
 }
 
 @end
@@ -1125,7 +1122,7 @@ NSString *const kFileXchangeUserInfo_PhotoCopyDictionaryKeyXMPString = @"kFileXc
                 NSString *fullPath = [(FileXchange *)config.server pathForFileAtIndex:[[parms objectForKey:@"idx"] integerValue] application:[parms objectForKey:@"app"]];
                 if ([fullPath isKindOfClass:[NSString class]])
                 {
-                    DLog(@"Sending %@",[fullPath lastPathComponent]);
+                    DLog(@"Sending %@", [fullPath lastPathComponent]);
                     return [[HTTPFileResponse alloc] initWithFilePath:fullPath forConnection:self];
                 }
             }

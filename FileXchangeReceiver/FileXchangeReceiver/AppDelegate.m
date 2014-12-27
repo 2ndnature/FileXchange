@@ -30,18 +30,25 @@
         NSString *uti = nil;
         if ([url getResourceValue:&uti forKey:NSURLTypeIdentifierKey error:NULL] && [uti caseInsensitiveCompare:@"com.2ndnature.filexchange"] == NSOrderedSame)
         {
-            DLog(@"Post notification");
+            DLog(@"Read file");
             NSDictionary *fileXchangeData = [NSDictionary dictionaryWithContentsOfURL:url];
-            [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"FileXchange" object:[NSDictionary dictionaryWithObjectsAndKeys:sourceApplication, @"Application", fileXchangeData, @"Data", nil]]];
-            
             DLog(@"Delete file");
             [[NSFileManager defaultManager] removeItemAtURL:url error:NULL]; // Not needed after we read it.
-            
-            return YES;
+            if ([fileXchangeData isKindOfClass:[NSDictionary class]])
+            {
+                DLog(@"Post notification");
+                // On iOS 8 sourceApplication is null. In FileXchange 1.4 this is available as the "AppBundleID" key in the fileXchangeData.
+                [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:@"FileXchange" object:([sourceApplication isKindOfClass:[NSString class]] && [sourceApplication length] > 0) ? @{ @"Application":sourceApplication, @"Data":fileXchangeData } : @{ @"Data":fileXchangeData }]];
+                return YES;
+            }
+            else
+            {
+                NSLog(@"Bad FileXchange file.");
+            }
         }
         else
         {
-            NSLog(@"Unsupported UTI: %@",uti);
+            NSLog(@"Unsupported UTI: %@", uti);
         }
         
         // Multitasking time limit workaround for large transfers.

@@ -79,18 +79,38 @@
 - (void)fileXchange:(NSNotification *)notification
 {
     DLog(@"Received FileXchange notification");
-    if ([notification isKindOfClass:[NSNotification class]] == NO) return;
+    if ([notification isKindOfClass:[NSNotification class]] == NO)
+    {
+        NSLog(@"Bad FileXchange notification.");
+        return;
+    }
     
     NSDictionary *info = [notification object];
-    if ([info isKindOfClass:[NSDictionary class]] == NO) return;
-    
-    NSString *application = [info objectForKey:@"Application"];
-    if ([application isKindOfClass:[NSString class]] == NO) return;
+    if ([info isKindOfClass:[NSDictionary class]] == NO)
+    {
+        NSLog(@"Received FileXchange notification - but without an information dictionary.");
+        return;
+    }
     
     NSDictionary *data = [info objectForKey:@"Data"];
-    if ([data isKindOfClass:[NSDictionary class]] == NO) return;
-    
-    DLog(@"%@ has %d file%@ for us: %@",[data objectForKey:@"AppName"],[[data objectForKey:@"Files"] count], ([[data objectForKey:@"Files"] count] == 1) ? @"" : @"s", [[data objectForKey:@"Files"] description]);
+    if ([data isKindOfClass:[NSDictionary class]] == NO)
+    {
+        NSLog(@"Received FileXchange notification - but without any data. (%@)", info);
+        return;
+    }
+
+    NSString *application = [info objectForKey:@"Application"];
+    if ([application isKindOfClass:[NSString class]] == NO)
+    {
+        application = [data objectForKey:@"AppBundleID"];
+        if ([application isKindOfClass:[NSString class]] == NO)
+        {
+            NSLog(@"Received FileXchange notification - but without the sender application information. (%@)", info);
+            return;
+        }
+    }
+
+    DLog(@"%@ has %lu file%@ for us: %@",[data objectForKey:@"AppName"],(unsigned long)[[data objectForKey:@"Files"] count], ([[data objectForKey:@"Files"] count] == 1) ? @"" : @"s", [[data objectForKey:@"Files"] description]);
     
     if (_fileXchange == nil)
     {
@@ -294,7 +314,7 @@
 
 - (void)fileXchange:(FileXchange *)fe application:(NSString *)application didFailWithError:(NSError *)error
 {
-    DLog(@"DidFailWithError: %@",[error description]);
+    DLog(@"DidFailWithError: %@", [error description]);
     
     [[[UIAlertView alloc] initWithTitle:@"Error" message:[error description] delegate:nil cancelButtonTitle:NSLocalizedString(@"OK", @"OK button") otherButtonTitles:nil] show];
     
@@ -303,7 +323,7 @@
 
 - (void)fileXchange:(FileXchange *)fe application:(NSString *)application newFilesAdded:(NSRange)range
 {
-    DLog(@"New files added. A smart app would add that range (%d, %d in [[fe fileXchangeDataForApplication:application] objectForKey:@\"Files\"]) to a download queue. But we live dangerously in this example and just download them without checking if other downloads are active.",range.location,range.length);
+    DLog(@"New files added. A smart app would add that range (%lu, %lu in [[fe fileXchangeDataForApplication:application] objectForKey:@\"Files\"]) to a download queue. But we live dangerously in this example and just download them without checking if other downloads are active.", range.location, (unsigned long)range.length);
     
     [self downloadProgress:0.0];
     [self setEditing:NO animated:YES];
